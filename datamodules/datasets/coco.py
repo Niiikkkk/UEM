@@ -187,6 +187,8 @@ class COCOPastable(Dataset):
             random.shuffle(zipped)
             self.images, self.targets = zip(*zipped)
 
+        print(len(self.images)) #Test images
+
         if proxy_size is not None:
             self.images = list(self.images[:int(proxy_size)])
             self.targets = list(self.targets[:int(proxy_size)])

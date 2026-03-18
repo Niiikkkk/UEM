@@ -178,12 +178,20 @@ The config files for training are available in the model zoo. There are two stag
 1. Train a Segmentor (inlier model)
 2. Train a UEM on top of a segmentor (OoD Training)
 
-A segmentor can be trained as follows:
+A segmentor with discriminative head can be trained as follows:
 ```
 python train_segmentor.py --config configs/segmentation/cityscapes/discriminative.yaml \
 SOLVER.BATCH_SIZE 4 \ # this is per gpu
 DATA.DATASET_ROOT PATH_TO_CITYSCAPES_DATASET_ROOT
 ```
+
+A segmentor with generative head can be trained as follows:
+```
+python train_segmentor.py --config configs/segmentation/cityscapes/gmm.yaml \
+SOLVER.BATCH_SIZE 4 \ # this is per gpu
+DATA.DATASET_ROOT PATH_TO_CITYSCAPES_DATASET_ROOT
+```
+THe base.yaml already contains the GMM Hdea, so not including discriminative.yaml (that contains Linear head) is enough.
 
 UEM can be trained as follows:
 
@@ -195,6 +203,10 @@ python train_ood.py --config PATH_TO_CONFIG \
  DATA.DATASETS_FOLDER datasets/ \
  DATA.COCO_ROOT datsets/coco \
 ```
+Note that there are multiple config files available (for example d_d.yaml, g_d.yaml, g_g.yaml) depending on the type of segmentor and UEM head.
+If I want discriminative segmentator and discriminative UEM head, I can use d_d.yaml. 
+g_d.yaml is for generative segmentor and discriminative UEM head.
+g_g.yaml is for generative segmentor and generative UEM head.
 
 Note that paths to datasets need to be overwritten accordingly.
 

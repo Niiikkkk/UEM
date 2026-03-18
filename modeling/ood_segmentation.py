@@ -212,7 +212,6 @@ class OoDSegmentationModel(pl.LightningModule):
 
             ood_out.ood_score = ood_out.sem_seg
             del ood_out["sem_seg"]
-
             result.update(ood_out)
 
         return result

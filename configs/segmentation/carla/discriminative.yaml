@@ -1,0 +1,11 @@
+BASE_CONFIG: 'configs/segmentation/carla/gmm.yaml'
+MODEL:
+  SEGMENTATION_HEAD:
+    NAME: LinearHead
+    EMBEDDING_DIM: 1024
+    NUM_CLASSES: 30
+  LOSS:
+    NAME: sem_seg
+
+CKPT:
+  DIR_PATH: ckpts/segmentation_discriminative_RAINY/

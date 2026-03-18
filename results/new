@@ -1,0 +1,62 @@
+Evaluating ODD...
+Calculating Metrics for 1440480000 Points for class all...
+Number of OOD points: 6656722, Number of ID points: 1433823278
+Class all - AUROC score: 0.9317775719005349
+Class all - AUPRC score: 0.3740971114111237
+Class all - FPR@TPR95: 0.35936278822221773
+Calculating Metrics for 1434305182 Points for class pothole...
+Number of OOD points: 481904, Number of ID points: 1433823278
+Class pothole - AUROC score: 0.6863032413426143
+Class pothole - AUPRC score: 0.0005166902304624688
+Class pothole - FPR@TPR95: 0.6585601722948174
+Calculating Metrics for 1433873433 Points for class tiny...
+Number of OOD points: 50155, Number of ID points: 1433823278
+Class tiny - AUROC score: 0.9098137383339037
+Class tiny - AUPRC score: 0.0005051524884978404
+Class tiny - FPR@TPR95: 0.3807379754368864
+Calculating Metrics for 1434114628 Points for class small...
+Number of OOD points: 291350, Number of ID points: 1433823278
+Class small - AUROC score: 0.9465743750416249
+Class small - AUPRC score: 0.04016019048156927
+Class small - FPR@TPR95: 0.3030402084182093
+Calculating Metrics for 1434417893 Points for class medium...
+Number of OOD points: 594615, Number of ID points: 1433823278
+Class medium - AUROC score: 0.959073305812091
+Class medium - AUPRC score: 0.05181940293186792
+Class medium - FPR@TPR95: 0.19440065263049802
+Calculating Metrics for 1439061976 Points for class large...
+Number of OOD points: 5238698, Number of ID points: 1433823278
+Class large - AUROC score: 0.9506477485075365
+Class large - AUPRC score: 0.40667174268062334
+Class large - FPR@TPR95: 0.27067252426069205
+Evaluating LRR...
+Calculating Metrics for 1440480000 Points for class all...
+Number of OOD points: 6656722, Number of ID points: 1433823278
+Class all - AUROC score: 0.8722156026204011
+Class all - AUPRC score: 0.5332577896625451
+Class all - FPR@TPR95: 0.6813183876904528
+Calculating Metrics for 1434305182 Points for class pothole...
+Number of OOD points: 481904, Number of ID points: 1433823278
+Class pothole - AUROC score: 0.4925541616282905
+Class pothole - AUPRC score: 0.00030146297449828524
+Class pothole - FPR@TPR95: 0.8548903507200557
+Calculating Metrics for 1433873433 Points for class tiny...
+Number of OOD points: 50155, Number of ID points: 1433823278
+Class tiny - AUROC score: 0.8195201757270963
+Class tiny - AUPRC score: 0.00028489030898925057
+Class tiny - FPR@TPR95: 0.6014424359206142
+Calculating Metrics for 1434114628 Points for class small...
+Number of OOD points: 291350, Number of ID points: 1433823278
+Class small - AUROC score: 0.9303642401064818
+Class small - AUPRC score: 0.0772119338182974
+Class small - FPR@TPR95: 0.3967562430660998
+Calculating Metrics for 1434417893 Points for class medium...
+Number of OOD points: 594615, Number of ID points: 1433823278
+Class medium - AUROC score: 0.9698015154753078
+Class medium - AUPRC score: 0.13398845216249247
+Class medium - FPR@TPR95: 0.1797456206454475
+Calculating Metrics for 1439061976 Points for class large...
+Number of OOD points: 5238698, Number of ID points: 1433823278
+Class large - AUROC score: 0.8933345243623881
+Class large - AUPRC score: 0.5860862162192536
+Class large - FPR@TPR95: 0.6373845759254022

@@ -27,6 +27,18 @@ class SemanticSegmentationDataModule(pl.LightningDataModule):
                     transform=transformations.cityscapes_val,
                     split="val",
                 )
+            elif self.config.DATA.EVAL_DATASET == "carla_anomaly":
+                from .datasets.carla_anomaly import CarlaAnomaly
+
+                hparams = edict(
+                    dataset_root=os.path.join(
+                        "/home/nicholas/Desktop/main_UE4/output"
+                    )
+                )
+                self.valid_dataset = CarlaAnomaly(
+                    hparams=hparams,
+                    transforms=transformations.road_anomaly,
+                )
             elif self.config.DATA.EVAL_DATASET == "road_anomaly":
                 from .datasets.road_anomaly import RoadAnomaly
 
@@ -185,6 +197,46 @@ class SemanticSegmentationDataModule(pl.LightningDataModule):
                     transform=transformations.cityscapes_val,
                     split="val",
                 )
+
+        elif "carla" in self.config.DATA.NAME:
+
+            from .datasets.carla import Carla
+
+            transformations = self.get_transformations()
+
+            if "ood" in self.config.DATA.NAME:
+
+                print("USING OOD CARLA DATASET")
+
+                from .datasets.carla import CarlaCOCOMix
+
+                self.train_dataset = CarlaCOCOMix(
+                    ood_label=self.config.DATA.OOD_LABEL,
+                    ood_prob=self.config.DATA.OOD_PROB,
+                    coco_root=self.config.DATA.COCO_ROOT,
+                    coco_proxy_size=self.config.DATA.COCO_PROXY_SIZE,
+                    hparams=self.config.DATA,
+                    transform=transformations.cityscapes_train,
+                    split="train",
+                )
+                self.valid_dataset = Carla(
+                    hparams=self.config.DATA,
+                    transform=transformations.cityscapes_val,
+                    split="val",
+                )
+            else:
+
+                self.train_dataset = Carla(
+                    hparams=self.config.DATA,
+                    transform=transformations.cityscapes_train,
+                    split="train",
+                )
+
+                self.valid_dataset = Carla(
+                    hparams=self.config.DATA,
+                    transform=transformations.cityscapes_val,
+                    split="val",
+                )
         else:
             raise ValueError(f"Undefined Dataset: {self.config.DATA.NAME}")
 
@@ -221,6 +273,16 @@ class SemanticSegmentationDataModule(pl.LightningDataModule):
                 ),
             ]
 
+        from .datasets.carla import Carla
+
+        transformations = self.get_transformations()
+
+        self.valid_dataset = Carla(
+            hparams=self.config.DATA,
+            transform=transformations.cityscapes_val,
+            split="val",
+        )
+
         return DataLoader(
             self.valid_dataset,
             batch_size=self.config.SOLVER.BATCH_SIZE,
@@ -235,13 +297,13 @@ class SemanticSegmentationDataModule(pl.LightningDataModule):
 
     def get_transformations(self):
 
-        min_height, min_width = 512, 1024
+        min_height, min_width = 300, 400 #Half the input, that in our case is 600x800
         if self.config.MODEL.BACKBONE.NAME == "DINOv2":
-            min_height, min_width = 518, 1036
+            min_height, min_width = 308, 406 #This should be divisible by 14
 
-        min_height_val, min_width_val = 1024, 2048
+        min_height_val, min_width_val = 600, 800 #The input size
         if self.config.MODEL.BACKBONE.NAME == "DINOv2":
-            min_height_val, min_width_val = 1036, 2058
+            min_height_val, min_width_val = 602, 812 #This should be divisible by 14
 
         transformations = edict(
             cityscapes_train=A.Compose(
@@ -249,7 +311,7 @@ class SemanticSegmentationDataModule(pl.LightningDataModule):
                     A.RandomScale(
                         scale_limit=[0.5 - 1, 2.0 - 1], p=1.0
                     ),  # subtracted 1 because albumentations uses scale factor
-                    A.RandomCrop(height=512, width=1024, p=1.0),
+                    A.RandomCrop(height=300, width=400, p=1.0), #crop by half the size
                     A.PadIfNeeded(
                         min_height=min_height,
                         min_width=min_width,
@@ -276,7 +338,7 @@ class SemanticSegmentationDataModule(pl.LightningDataModule):
                         p=1.0,
                         mask_value=self.config.MODEL.IGNORE_INDEX,
                     ),
-                    A.RandomCrop(height=512, width=1024, p=1.0),
+                    A.RandomCrop(height=380, width=760, p=1.0),
                     A.PadIfNeeded(
                         min_height=min_height,
                         min_width=min_width,

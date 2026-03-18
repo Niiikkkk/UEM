@@ -32,33 +32,33 @@ SOLVER:
     LR_END: 1.0e-7
     POWER: 1.0
     LAST_EPOCH: -1
-  BATCH_SIZE: 2 # per GPU, should be scaled accordingly
+  BATCH_SIZE: 8 # per GPU, should be scaled accordingly
   PRECISION: bf16-mixed
   MAX_STEPS: 4000
   LOG_EVERY_N_STEPS: 100
-  NUM_WORKERS: 5
+  NUM_WORKERS: 20
   VAL_CHECK_INTERVAL: 500
   EVAL_MODE: sliding_window
-  EVAL_WINDOW_SIZE: [518, 1036]
+  EVAL_WINDOW_SIZE: [308, 406]
   EVAL_STRIDE: [140, 140]
 
 DATA:
   MODULE: SemanticSegmentation
-  NAME: cityscapes_ood
-  DATASET_ROOT: 'datasets/cityscapes'
+  NAME: carla_ood
+  DATASET_ROOT: '/home/nicholas/Desktop/main_UE4/output_normal'
   DATASETS_FOLDER: 'datasets/'
   TARGET_TYPE: semantic_trainids
-  EVAL_DATASET: road_anomaly
+  EVAL_DATASET: cityscapes
   OOD_LABEL: 254
   OOD_PROB: 0.2
-  COCO_ROOT: datasets/coco
+  COCO_ROOT: '/COCO/'
   COCO_PROXY_SIZE: 30000
 
 CKPT:
-  DIR_PATH: ckpts/ood_segmentation/
+  DIR_PATH: ckpts/d_d/
 
 WANDB:
-  ACTIVATE: True
+  ACTIVATE: False
   RUN_NAME: gmmseg_ood_head
   PROJECT: LR_OoD
 

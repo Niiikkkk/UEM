@@ -91,7 +91,7 @@ def main(args):
         config.CKPT.DIR_PATH, config.DATA.NAME, config.WANDB.RUN_NAME
     )
 
-    callbacks = [
+    callbacks_old = [
         LearningRateMonitor() if not args.dev else ModelSummary(),
         ModelCheckpoint(
             save_top_k=1,
@@ -108,6 +108,18 @@ def main(args):
             mode="min",
             filename="{step:02d}-{llr_FPR95:.4f}",
             save_last=False,
+        ),
+    ]
+
+    callbacks = [
+        LearningRateMonitor() if not args.dev else ModelSummary(),
+        ModelCheckpoint(
+            save_top_k=1,
+            dirpath=ckpt_path,
+            monitor="val_iou",
+            mode="max",
+            filename="{epoch:02d}-{val_iou:.2f}",
+            save_last=True,
         ),
     ]
 
