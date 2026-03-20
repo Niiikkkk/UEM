@@ -27,7 +27,10 @@ class CarlaAnomaly(Dataset):
         if "All" not in weather_filter:
             weather = [w for w in weather if w in weather_filter]
 
-        print("Testing on anomaly weather conditions: ", weather)
+        if "anomaly_sizes.txt"  in weather:
+            weather.remove("anomaly_sizes.txt")
+
+        print("OOD Testing on anomaly weather conditions: ", weather)
 
         self.images = []
         self.labels = []
@@ -37,8 +40,8 @@ class CarlaAnomaly(Dataset):
                 continue
             dirs = os.listdir(os.path.join(hparams.dataset_root, w))
             for dir_ in dirs:
-                self.images.extend(glob.glob(os.path.join(hparams.dataset_root, w,  dir_, "rgb", '*.png')))
-                self.labels.extend(glob.glob(os.path.join(hparams.dataset_root, w,  dir_, "semantic/original", '*.png')))
+                self.images.extend(glob.glob(os.path.join(hparams.dataset_root, w,  dir_, "rgb", '*.png'))[50:])
+                self.labels.extend(glob.glob(os.path.join(hparams.dataset_root, w,  dir_, "semantic/original", '*.png'))[50:])
 
         self.num_samples = len(self.images)
 

@@ -29,22 +29,7 @@ def get_datamodule(args, hparams):
     else:
         raise ValueError(f"Undefined datamodule: {args.dataset}")
 
-
-def main(args):
-
-    # load config from ckpt
-    ckpt = torch.load(args.ckpt)
-    hparams = edict(ckpt["hyper_parameters"])
-    state_dict = ckpt["state_dict"]
-    model = SegmentationModel(hparams)
-    model.load_state_dict(state_dict)
-
-    hparams = overwrite_config(hparams, args.opts)
-
-    # load datamodule
-
-    datamodule = get_datamodule(args, hparams)
-
+def seg(model):
     from torchmetrics import JaccardIndex
 
     iou_metric = JaccardIndex(
@@ -53,32 +38,23 @@ def main(args):
         ignore_index=255,
     )
 
-
     transform = A.Compose(
         [
-            A.PadIfNeeded(
-                min_height=602,
-                min_width=812,
-                border_mode=0,
-                p=1.0,
-                mask_value=255,
-            ),
             A.Normalize(mean=(0.485, 0.456, 0.406),
                         std=(0.229, 0.224, 0.225)),
             ToTensorV2(),
         ]
     )
-    img_path = "/home/nicholas/Desktop/main_UE4/output_normal/Sunny/119/rgb/normal__336411.png"
+    img_path = "/home/nicholas/Desktop/main_UE4/output_normal/HeavyRainFog/1/rgb/normal__292783.png"
     image = np.array(Image.open(img_path).convert('RGB'))
     label = np.array(Image.open(img_path.replace("rgb", "semantic/original")))
-    label = label[:,:,0]
-    H,W = label.shape
-    aut = transform(image=image,mask=label)
-    image,label = aut['image'], aut['mask']
+    label = label[:, :, 0]
+    aut = transform(image=image, mask=label)
+    image, label = aut['image'], aut['mask']
     image = image.unsqueeze(0)
     label = label.unsqueeze(0)
     print(image.shape)
-    out = model.sliding_window_inference(image,label.shape,[308,406],[140,140])
+    out = model.sliding_window_inference(image, label.shape, [308, 406], [140, 140])
 
     print(iou_metric(out, label))
 
@@ -124,6 +100,22 @@ def main(args):
     Image.fromarray(np.uint8(color.cpu().numpy())).show()
     exit()
 
+def main(args):
+
+    # load config from ckpt
+    ckpt = torch.load(args.ckpt)
+    hparams = edict(ckpt["hyper_parameters"])
+    state_dict = ckpt["state_dict"]
+    model = SegmentationModel(hparams)
+    model.load_state_dict(state_dict)
+
+    hparams = overwrite_config(hparams, args.opts)
+
+    # load datamodule
+
+    datamodule = get_datamodule(args, hparams)
+
+    seg(model)
 
     devices = 1
     if args.devices is not None:

@@ -10,6 +10,9 @@ from typing import Optional, Callable
 from torch.utils.data import Dataset
 from PIL import Image
 
+_RESAMPLING = getattr(Image, "Resampling", Image)
+
+
 class COCO(Dataset):
     # train_id_in = 0
     # train_id_out = 254
@@ -100,7 +103,29 @@ def extract_bboxes(mask):
     return boxes.astype(np.int32)
 
 
-def mix_object(current_labeled_image, current_labeled_mask, cut_object_image, cut_object_mask, ood_label):
+def _resize_cut_object(cut_object_image, cut_object_mask, target_h, target_w):
+    """Resize RGB crop + label crop with interpolation suitable for each tensor."""
+    resized_image = np.array(
+        Image.fromarray(cut_object_image).resize((target_w, target_h), _RESAMPLING.BILINEAR)
+    )
+    resized_mask = np.array(
+        Image.fromarray(cut_object_mask).resize((target_w, target_h), _RESAMPLING.NEAREST)
+    )
+    return resized_image, resized_mask
+
+
+def mix_object(
+    current_labeled_image,
+    current_labeled_mask,
+    cut_object_image,
+    cut_object_mask,
+    ood_label,
+    paste_mode="random",
+    horizon_y_ratio=0.45,
+    min_scale=0.2,
+    max_scale=1.35,
+    scale_jitter=0.1,
+):
     """
     Adapted from Adapted from https://github.com/tianyu0207/PEBAL/blob/main/code/dataset/data_loader.py
     """
@@ -122,23 +147,56 @@ def mix_object(current_labeled_image, current_labeled_mask, cut_object_image, cu
     #     print(current_labeled_mask.shape)
     #     return current_labeled_image, current_labeled_mask
 
-    if mask.shape[0] != 0:
-        if current_labeled_mask.shape[0] - cut_object_mask.shape[0] < 0 or \
-                current_labeled_mask.shape[1] - cut_object_mask.shape[1] < 0:
-            # print('wrong size')
-            # print(current_labeled_mask.shape)
-            return current_labeled_image, current_labeled_mask
-        h_start_point = random.randint(0, current_labeled_mask.shape[0] - cut_object_mask.shape[0])
-        h_end_point = h_start_point + cut_object_mask.shape[0]
-        w_start_point = random.randint(0, current_labeled_mask.shape[1] - cut_object_mask.shape[1])
-        w_end_point = w_start_point + cut_object_mask.shape[1]
-    else:
+    if mask.shape[0] == 0:
         # print('no odd pixel to mix')
         h_start_point = 0
         h_end_point = 0
         w_start_point = 0
         w_end_point = 0
-    
+    elif paste_mode == "perspective":
+        host_h, host_w = current_labeled_mask.shape[:2]
+        crop_h, crop_w = cut_object_mask.shape[:2]
+
+        horizon = int(max(0, min(host_h - 1, horizon_y_ratio * host_h)))
+        if horizon >= host_h - 1:
+            horizon = max(0, host_h - 2)
+
+        anchor_y = random.randint(horizon, host_h - 1)
+        depth_ratio = (anchor_y - horizon) / max(1, (host_h - 1 - horizon))
+        base_scale = min_scale + depth_ratio * (max_scale - min_scale)
+        if scale_jitter > 0:
+            jitter = random.uniform(1 - scale_jitter, 1 + scale_jitter)
+            base_scale = base_scale * jitter
+
+        max_fit_scale = min((host_h - 1) / max(1, crop_h), (host_w - 1) / max(1, crop_w))
+        target_scale = max(0.05, min(base_scale, max_fit_scale))
+        scaled_h = max(1, int(crop_h * target_scale))
+        scaled_w = max(1, int(crop_w * target_scale))
+
+        cut_object_image, cut_object_mask = _resize_cut_object(
+            cut_object_image, cut_object_mask, scaled_h, scaled_w
+        )
+        idx = np.transpose(
+            np.repeat(np.expand_dims(cut_object_mask, axis=0), 3, axis=0), (1, 2, 0)
+        )
+
+        h_end_point = min(host_h, anchor_y + 1)
+        h_start_point = max(0, h_end_point - scaled_h)
+        h_end_point = h_start_point + scaled_h
+
+        if host_w - scaled_w < 0:
+            return current_labeled_image, current_labeled_mask
+        w_start_point = random.randint(0, host_w - scaled_w)
+        w_end_point = w_start_point + scaled_w
+    else:
+        if current_labeled_mask.shape[0] - cut_object_mask.shape[0] < 0 or \
+                current_labeled_mask.shape[1] - cut_object_mask.shape[1] < 0:
+            return current_labeled_image, current_labeled_mask
+        h_start_point = random.randint(0, current_labeled_mask.shape[0] - cut_object_mask.shape[0])
+        h_end_point = h_start_point + cut_object_mask.shape[0]
+        w_start_point = random.randint(0, current_labeled_mask.shape[1] - cut_object_mask.shape[1])
+        w_end_point = w_start_point + cut_object_mask.shape[1]
+
     result_image = current_labeled_image.copy()
     result_image[h_start_point:h_end_point, w_start_point:w_end_point, :][np.where(idx == ood_label)] = \
         cut_object_image[np.where(idx == ood_label)]

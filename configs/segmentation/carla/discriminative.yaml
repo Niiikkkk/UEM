@@ -8,4 +8,4 @@ MODEL:
     NAME: sem_seg
 
 CKPT:
-  DIR_PATH: ckpts/segmentation_discriminative_RAINY/
+  DIR_PATH: ckpts/segmentation_discriminative_Foggy/

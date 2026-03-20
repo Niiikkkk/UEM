@@ -10,7 +10,7 @@ MODEL:
     NAME: LinearHead
     EMBEDDING_DIM: 256
     NUM_CLASSES: 2
-  SEGMENTOR_CKPT: ckpts/segmentation_discriminative_ALL/carla/GMMSeg_/last.ckpt
+  SEGMENTOR_CKPT: ckpts/segmentation_discriminative_Foggy/carla/GMMSeg_/last.ckpt
 
 CKPT:
-  DIR_PATH: ckpts/d_d_ALL/
+  DIR_PATH: ckpts/d_d_Foggy/

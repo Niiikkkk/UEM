@@ -145,7 +145,7 @@ class Carla(data.Dataset):
         weather = os.listdir(self.root)
 
         # Weather condition: Foggy  HeavyFog  HeavyRain  HeavyRainFog  Overcast  Rainy  Sunny
-        weather_filter = ["All"]
+        weather_filter = ["HeavyRainFog"]
         if "All" not in weather_filter:
             weather = [w for w in weather if w in weather_filter]
 
@@ -241,6 +241,11 @@ class CarlaCOCOMix(Carla):
         ood_prob,
         coco_root,
         coco_proxy_size,
+        paste_mode="perspective",
+        horizon_y_ratio=0.45,
+        min_scale=0.2,
+        max_scale=1.35,
+        scale_jitter=0.1,
         **kwargs
     ):
         super().__init__(**kwargs)
@@ -248,6 +253,11 @@ class CarlaCOCOMix(Carla):
         self.ood_prob = ood_prob
         self.coco_root = coco_root
         self.coco_proxy_size = coco_proxy_size
+        self.paste_mode = paste_mode
+        self.horizon_y_ratio = horizon_y_ratio
+        self.min_scale = min_scale
+        self.max_scale = max_scale
+        self.scale_jitter = scale_jitter
         self.coco_dataset = COCOPastable(
             root=coco_root,
             proxy_size=coco_proxy_size,
@@ -264,11 +274,23 @@ class CarlaCOCOMix(Carla):
             coco_image, coco_target = self.coco_dataset[np.random.randint(
                 len(self.coco_dataset))]
             image, target = mix_object(
-                image, target, coco_image, coco_target, self.ood_label)
+                image,
+                target,
+                coco_image,
+                coco_target,
+                self.ood_label,
+                paste_mode=self.paste_mode,
+                horizon_y_ratio=self.horizon_y_ratio,
+                min_scale=self.min_scale,
+                max_scale=self.max_scale,
+                scale_jitter=self.scale_jitter,
+            )
 
         if self.transform:
             aug = self.transform(image=image, mask=target)
             image, target = aug["image"], aug["mask"]
+
+
 
         return image, target.long()
 
@@ -285,6 +307,11 @@ class CarlaMapillaryCOCOMix(data.Dataset):
         hparams,
         cityscapes_split,
         mapillary_mode,
+        paste_mode="perspective",
+        horizon_y_ratio=0.45,
+        min_scale=0.2,
+        max_scale=1.35,
+        scale_jitter=0.1,
     ):
         super().__init__()
 
@@ -293,6 +320,11 @@ class CarlaMapillaryCOCOMix(data.Dataset):
         self.coco_root = coco_root
         self.coco_proxy_size = coco_proxy_size
         self.transform = transform
+        self.paste_mode = paste_mode
+        self.horizon_y_ratio = horizon_y_ratio
+        self.min_scale = min_scale
+        self.max_scale = max_scale
+        self.scale_jitter = scale_jitter
         self.coco_dataset = COCOPastable(
             root=coco_root,
             proxy_size=coco_proxy_size,
@@ -325,7 +357,17 @@ class CarlaMapillaryCOCOMix(data.Dataset):
             coco_image, coco_target = self.coco_dataset[np.random.randint(
                 len(self.coco_dataset))]
             image, target = mix_object(
-                image, target, coco_image, coco_target, self.ood_label)
+                image,
+                target,
+                coco_image,
+                coco_target,
+                self.ood_label,
+                paste_mode=self.paste_mode,
+                horizon_y_ratio=self.horizon_y_ratio,
+                min_scale=self.min_scale,
+                max_scale=self.max_scale,
+                scale_jitter=self.scale_jitter,
+            )
 
         if self.transform:
             aug = self.transform(image=image, mask=target)

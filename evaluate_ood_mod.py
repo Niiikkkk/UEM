@@ -46,7 +46,7 @@ def evaluate_single_ckpt(ckpt, args, opts):
 
     hparams = edict(
         dataset_root=os.path.join(
-            "/home/nicholas/Desktop/main_UE4/output_anomaly/"
+            "/home/nicholas/Desktop/main_UE4/output/"
         )
     )
     dataset = CarlaAnomaly(
@@ -67,6 +67,13 @@ def evaluate_single_ckpt(ckpt, args, opts):
     j=0
     MAX_STEP = 3000
     for x,y in tqdm(loader):
+
+        #30 is the pothole, we don't care about it here
+        mask = y > 30
+        _, anomalous_pixels = np.unique(mask,return_counts=True)
+        if len(anomalous_pixels) == 1:
+            #print("No anomalous points present")
+            continue
 
         if j>MAX_STEP:
             break
@@ -104,7 +111,7 @@ def evaluate_ood(anomaly_score, ood_gts, verbose=True):
 
     result = {}
 
-    for cls in ["all"]:
+    for cls in ["all","tiny","small","medium","large"]:
         if cls == "all":
             mask = ood_gts >= 30
         elif cls == "pothole":
