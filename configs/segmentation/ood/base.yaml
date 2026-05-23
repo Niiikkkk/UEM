@@ -32,11 +32,11 @@ SOLVER:
     LR_END: 1.0e-7
     POWER: 1.0
     LAST_EPOCH: -1
-  BATCH_SIZE: 1 # per GPU, should be scaled accordingly change to 8
+  BATCH_SIZE: 8 # per GPU, should be scaled accordingly change to 8
   PRECISION: bf16-mixed
   MAX_STEPS: 4000
   LOG_EVERY_N_STEPS: 100
-  NUM_WORKERS: 1 #change to 20
+  NUM_WORKERS: 20 #change to 20
   VAL_CHECK_INTERVAL: 2000
   EVAL_MODE: sliding_window
   EVAL_WINDOW_SIZE: [308, 406]
@@ -50,9 +50,18 @@ DATA:
   TARGET_TYPE: semantic_trainids
   EVAL_DATASET: cityscapes
   OOD_LABEL: 254
-  OOD_PROB: 1 #CHANGE to 0.2 / 0.3
+  OOD_PROB: 0.5 #CHANGE to 0.2 / 0.3
   COCO_ROOT: '/COCO/'
   COCO_PROXY_SIZE: 30000
+  COCO_PASTE_MODE: perspective
+  COCO_HORIZON_Y_RATIO: 0.01
+  COCO_MIN_SCALE: 0.1
+  COCO_MAX_SCALE: 0.3
+  COCO_SCALE_JITTER: 0.1
+  # Use the label ids from your host mask space, e.g. [0] for trainids road, [7] for raw Cityscapes ids.
+  COCO_ALLOWED_HOST_LABELS: [1]
+  COCO_OBJECT_FOG_P: 0.5
+  COCO_OBJECT_FOG_STRENGTH: 0.5
 
 CKPT:
   DIR_PATH: ckpts/d_d/

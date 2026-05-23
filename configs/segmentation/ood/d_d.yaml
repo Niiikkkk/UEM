@@ -13,4 +13,4 @@ MODEL:
   SEGMENTOR_CKPT: ckpts/segmentation_discriminative_Foggy/carla/GMMSeg_/last.ckpt
 
 CKPT:
-  DIR_PATH: ckpts/d_d_Foggy/
+  DIR_PATH: ckpts/d_d_Foggy_new/

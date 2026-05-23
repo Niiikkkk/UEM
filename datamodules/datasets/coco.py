@@ -114,6 +114,46 @@ def _resize_cut_object(cut_object_image, cut_object_mask, target_h, target_w):
     return resized_image, resized_mask
 
 
+def _normalize_allowed_labels(allowed_host_labels):
+    if allowed_host_labels is None:
+        return None
+    if np.isscalar(allowed_host_labels):
+        return (int(allowed_host_labels),)
+    labels = tuple(int(v) for v in allowed_host_labels)
+    return labels if len(labels) > 0 else None
+
+
+def _sample_anchor_from_mask(host_mask, allowed_labels, min_y=0):
+    candidate_mask = np.isin(host_mask, allowed_labels)
+    if min_y > 0:
+        candidate_mask[:min_y, :] = False
+    ys, xs = np.where(candidate_mask)
+    if ys.size == 0:
+        return None
+    pick = random.randint(0, ys.size - 1)
+    return int(ys[pick]), int(xs[pick])
+
+
+def _apply_fog_to_object(cut_object_image, cut_object_mask, ood_label, fog_p, fog_strength):
+    if fog_p <= 0 or random.random() >= fog_p:
+        return cut_object_image
+
+    strength = max(0.0, min(1.0, float(fog_strength)))
+    if strength == 0:
+        return cut_object_image
+
+    object_region = cut_object_mask == ood_label
+    if not np.any(object_region):
+        return cut_object_image
+
+    haze_value = random.randint(220, 255)
+    fogged = cut_object_image.astype(np.float32)
+    fogged[object_region] = (
+        fogged[object_region] * (1.0 - strength) + haze_value * strength
+    )
+    return np.clip(fogged, 0, 255).astype(np.uint8)
+
+
 def mix_object(
     current_labeled_image,
     current_labeled_mask,
@@ -125,6 +165,9 @@ def mix_object(
     min_scale=0.2,
     max_scale=1.35,
     scale_jitter=0.1,
+    allowed_host_labels=None,
+    coco_fog_p=0.0,
+    coco_fog_strength=0.35,
 ):
     """
     Adapted from Adapted from https://github.com/tianyu0207/PEBAL/blob/main/code/dataset/data_loader.py
@@ -147,6 +190,8 @@ def mix_object(
     #     print(current_labeled_mask.shape)
     #     return current_labeled_image, current_labeled_mask
 
+    allowed_labels = _normalize_allowed_labels(allowed_host_labels)
+
     if mask.shape[0] == 0:
         # print('no odd pixel to mix')
         h_start_point = 0
@@ -161,7 +206,17 @@ def mix_object(
         if horizon >= host_h - 1:
             horizon = max(0, host_h - 2)
 
-        anchor_y = random.randint(horizon, host_h - 1)
+        anchor_x = None
+        if allowed_labels is not None:
+            anchor_point = _sample_anchor_from_mask(
+                current_labeled_mask, allowed_labels, min_y=horizon
+            )
+            if anchor_point is None:
+                return current_labeled_image, current_labeled_mask
+            anchor_y, anchor_x = anchor_point
+        else:
+            anchor_y = random.randint(horizon, host_h - 1)
+
         depth_ratio = (anchor_y - horizon) / max(1, (host_h - 1 - horizon))
         base_scale = min_scale + depth_ratio * (max_scale - min_scale)
         if scale_jitter > 0:
@@ -186,16 +241,44 @@ def mix_object(
 
         if host_w - scaled_w < 0:
             return current_labeled_image, current_labeled_mask
-        w_start_point = random.randint(0, host_w - scaled_w)
+        if anchor_x is None:
+            w_start_point = random.randint(0, host_w - scaled_w)
+        else:
+            w_start_point = max(0, min(anchor_x - scaled_w // 2, host_w - scaled_w))
         w_end_point = w_start_point + scaled_w
     else:
         if current_labeled_mask.shape[0] - cut_object_mask.shape[0] < 0 or \
                 current_labeled_mask.shape[1] - cut_object_mask.shape[1] < 0:
             return current_labeled_image, current_labeled_mask
-        h_start_point = random.randint(0, current_labeled_mask.shape[0] - cut_object_mask.shape[0])
-        h_end_point = h_start_point + cut_object_mask.shape[0]
-        w_start_point = random.randint(0, current_labeled_mask.shape[1] - cut_object_mask.shape[1])
-        w_end_point = w_start_point + cut_object_mask.shape[1]
+        if allowed_labels is not None:
+            anchor_point = _sample_anchor_from_mask(current_labeled_mask, allowed_labels)
+            if anchor_point is None:
+                return current_labeled_image, current_labeled_mask
+            anchor_y, anchor_x = anchor_point
+            h_end_point = min(current_labeled_mask.shape[0], anchor_y + 1)
+            h_start_point = max(0, h_end_point - cut_object_mask.shape[0])
+            h_end_point = h_start_point + cut_object_mask.shape[0]
+            w_start_point = max(
+                0,
+                min(
+                    anchor_x - cut_object_mask.shape[1] // 2,
+                    current_labeled_mask.shape[1] - cut_object_mask.shape[1],
+                ),
+            )
+            w_end_point = w_start_point + cut_object_mask.shape[1]
+        else:
+            h_start_point = random.randint(0, current_labeled_mask.shape[0] - cut_object_mask.shape[0])
+            h_end_point = h_start_point + cut_object_mask.shape[0]
+            w_start_point = random.randint(0, current_labeled_mask.shape[1] - cut_object_mask.shape[1])
+            w_end_point = w_start_point + cut_object_mask.shape[1]
+
+    cut_object_image = _apply_fog_to_object(
+        cut_object_image,
+        cut_object_mask,
+        ood_label,
+        coco_fog_p,
+        coco_fog_strength,
+    )
 
     result_image = current_labeled_image.copy()
     result_image[h_start_point:h_end_point, w_start_point:w_end_point, :][np.where(idx == ood_label)] = \
