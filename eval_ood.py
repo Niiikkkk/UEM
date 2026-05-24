@@ -100,7 +100,7 @@ def main(args):
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    ckpts = glob.glob("ckpts/*_new/carla_ood/gmmseg_ood_head__nc5_ui3_memsz8000_projnl3_projhd512/last.ckpt")
+    ckpts = glob.glob("ckpts/d_d_All_new/carla_ood/gmmseg_ood_head__nc5_ui3_memsz8000_projnl3_projhd512/last.ckpt")
 
     for ckpt in ckpts:
         args.ckpt = ckpt
@@ -123,10 +123,10 @@ def main(args):
                 j=0
                 while j<3:
                     img = random.choice(images)
-                    save_path = f"img_results/{args.ckpt.split('/')[1]}/{w}/{run}"
+                    save_path = f"img_results_new/{args.ckpt.split('/')[1]}/{w}/{run}"
                     if not os.path.exists(save_path):
                         os.makedirs(save_path, exist_ok=True)
-                    save_path = f"img_results/{args.ckpt.split('/')[1]}/{w}/{run}/{img.split('/')[-1]}"
+                    save_path = f"img_results_new/{args.ckpt.split('/')[1]}/{w}/{run}/{img.split('/')[-1]}"
                     ret = run_model_eval_ood(img, model, device, transform, save_path)
                     if ret == -1:
                         continue
