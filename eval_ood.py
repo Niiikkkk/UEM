@@ -118,7 +118,7 @@ def main(args):
                 run_path = os.path.join(w_path,run)
                 images = glob.glob(f"{run_path}/rgb/*.png")
                 #Check those images and get some new
-                img = images[120]
+                img = images[100]
                 #images = images[50:]
                 #len_final = min(len(images)-1,30)
                 #images = images[:len_final]
