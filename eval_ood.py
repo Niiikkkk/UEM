@@ -114,6 +114,8 @@ def main(args):
         for w in weathers:
             w_path = os.path.join(or_path,w)
             runs = os.listdir(w_path)
+            print(runs)
+            exit()
             for run in runs:
                 run_path = os.path.join(w_path,run)
                 images = glob.glob(f"{run_path}/rgb/*.png")
