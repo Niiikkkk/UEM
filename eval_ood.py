@@ -1,5 +1,7 @@
+import glob
 import os
 import argparse
+import random
 
 import numpy as np
 from albumentations.pytorch import ToTensorV2
@@ -30,7 +32,7 @@ ANOMALY_CLASS_INFO = {
     36: ("large", (0.7, 0.0, 0.7)),     # purple
 }
 
-def main(args):
+def main_old(args):
 
     if args.multiple_datasets:
         datasets = args.dataset.split(",")
@@ -54,10 +56,92 @@ def main(args):
     model = OoDSegmentationModel.load_from_checkpoint(
         args.ckpt, segmentor_ckpt=segmentor_ckpt)
 
-    img_path = "/home/nicholas/Desktop/main_UE4/output/Sunny/2/rgb/coffecup_umbrella_skateboard_table_pilesand__131554.png"
+    or_path="/home/nicholas/Desktop/main_UE4/output_an_seq"
+    weathers = os.listdir(or_path)
+    weathers.remove("anomaly_sizes.txt")
+    for w in weathers:
+        w_path = os.path.join(or_path,w)
+        runs = os.listdir(w_path)
+        for run in runs:
+            run_path = os.path.join(w_path,run)
+            images = glob.glob(f"{run_path}/rgb/*.png")
+            images = images[50:]
+            j=0
+            while j<3:
+                img = random.choice(images)
+                save_path = f"results/{args.ckpt.split('/')[1]}/{w}/{run}"
+                if not os.path.exists(save_path):
+                    os.makedirs(save_path, exist_ok=True)
+                save_path = f"results/{args.ckpt.split('/')[1]}/{w}/{run}/{img.split('/')[-1]}"
+                ret = run_model_eval_ood(img, model, device, transform, save_path)
+                if ret == -1:
+                    continue
+                j+=1
+            exit()
+
+def main(args):
+
+    if args.multiple_datasets:
+        datasets = args.dataset.split(",")
+    else:
+        datasets = [args.dataset]
+
+    transform = A.Compose(
+        [
+            A.Normalize(mean=(0.485, 0.456, 0.406),
+                        std=(0.229, 0.224, 0.225)),
+            ToTensorV2(),
+        ]
+    )
+
+    segmentor_ckpt = None
+    if args.segmentor_ckpt is not None:
+        segmentor_ckpt = args.segmentor_ckpt
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    ckpts = glob.glob("ckpts/*_new/carla_ood/gmmseg_ood_head__nc5_ui3_memsz8000_projnl3_projhd512/last.ckpt")
+
+    for ckpt in ckpts:
+        args.ckpt = ckpt
+
+        model = OoDSegmentationModel.load_from_checkpoint(
+            args.ckpt, segmentor_ckpt=segmentor_ckpt)
+
+        or_path="/home/nicholas/Desktop/main_UE4/output_an_seq"
+        weathers = os.listdir(or_path)
+        weathers.remove("anomaly_sizes.txt")
+        for w in weathers:
+            w_path = os.path.join(or_path,w)
+            runs = os.listdir(w_path)
+            for run in runs:
+                run_path = os.path.join(w_path,run)
+                images = glob.glob(f"{run_path}/rgb/*.png")
+                images = images[50:]
+                len_final = min(len(images)-1,30)
+                images = images[:len_final]
+                j=0
+                while j<3:
+                    img = random.choice(images)
+                    save_path = f"img_results/{args.ckpt.split('/')[1]}/{w}/{run}"
+                    if not os.path.exists(save_path):
+                        os.makedirs(save_path, exist_ok=True)
+                    save_path = f"img_results/{args.ckpt.split('/')[1]}/{w}/{run}/{img.split('/')[-1]}"
+                    ret = run_model_eval_ood(img, model, device, transform, save_path)
+                    if ret == -1:
+                        continue
+                    j+=1
+
+def run_model_eval_ood(img_path, model, device, transform, save_path):
+    #img_path = "/home/nicholas/Desktop/main_UE4/output_an_seq/HeavyRainFog/2/rgb/coffecup_umbrella_skateboard_table_pilesand__132998.png"
     image = np.array(Image.open(img_path).convert('RGB'))
     label = np.array(Image.open(img_path.replace("rgb", "semantic/original")))
     label = label[:, :, 0]
+
+    mask = label >30
+    num_ano_pixels = np.sum(mask)
+    if num_ano_pixels == 0:
+        return -1
 
     aut = transform(image=image, mask=label)
     image, label = aut['image'], aut['mask']
@@ -65,15 +149,15 @@ def main(args):
     label = label.unsqueeze(0)
 
     model.to(device)
-    image=image.to(device)
-    label=label.to(device)
+    image = image.to(device)
+    label = label.to(device)
     model.eval()
 
     with torch.no_grad():
-        out = model.sliding_window_inference(image, label.shape, 30, [308, 406], [140, 140], True,True)
+        out = model.sliding_window_inference(image, label.shape, 30, [308, 406], [140, 140], True, True)
 
-        #show_id_pred(out, label)
-        compute_ood(out,label)
+        # show_id_pred(out, label)
+        llr, ood = compute_ood(out, label,save_path)
 
         # Visualize OOD and LLR scores
         ood_score = get_ood_score(out)
@@ -82,24 +166,36 @@ def main(args):
             image.squeeze(0),
             ood_score,
             llr_score,
+            llr,
+            ood,
             label=label.squeeze(0),
-            save_path="ood_llr_scores.png",
+            save_path=save_path,
         )
-        #show_scores_overlay(image.squeeze(0), ood_score, llr_score, alpha=0.6, save_path="ood_llr_overlay.png")
+        # show_scores_overlay(image.squeeze(0), ood_score, llr_score, alpha=0.6, save_path="ood_llr_overlay.png")
 
-
-
-def compute_ood(out,label):
+def compute_ood(out,label,save_path):
     ood_score = get_ood_score(out)
     llr_score = get_llr_score(out)
     from evaluate_ood_mod import evaluate_ood
 
     ood_lbl = label.cpu().numpy()
+    print("LLR")
+    res_llr = evaluate_ood(llr_score.cpu().numpy(), ood_lbl)
+    print("OOD")
+    res_ood = evaluate_ood(ood_score.cpu().numpy(), ood_lbl)
+    #save_results_to_file(res_llr,res_ood,save_path)
+    return res_llr, res_ood
 
-    print("LLR score")
-    evaluate_ood(llr_score.cpu().numpy(), ood_lbl)
-    print("OOD score")
-    evaluate_ood(ood_score.cpu().numpy(), ood_lbl)
+def save_results_to_file(res_llr,res_ood,save_path):
+    with open(save_path.replace(".png", "_results.txt"), "w") as f:
+        f.write("LLR Score:\n")
+        for class_, values in res_llr.items():
+            for metric, value in values.items():
+                f.write(f"Class {class_} : {metric}: {value:.4f}\n")
+        f.write("\nOOD Score:\n")
+        for class_, values in res_ood.items():
+            for metric, value in values.items():
+                f.write(f"Class {class_} : {metric}: {value:.4f}\n")
 
 def show_id_pred(out,label):
     iou_metric = JaccardIndex(
@@ -197,7 +293,49 @@ def colorize_anomaly_labels(label_np):
 
     return color_map, legend
 
-def show_scores_visualization(image, ood_score, llr_score, label=None, save_path="visualization_scores.png"):
+
+def _format_metric_value(value):
+    try:
+        return f"{float(value):.4f}"
+    except (TypeError, ValueError):
+        return "N/A"
+
+
+def _format_metrics_text(metrics_dict, title, max_classes=6):
+    """Format evaluate_ood outputs into compact lines for figure overlays."""
+    if not isinstance(metrics_dict, dict) or not metrics_dict:
+        return f"{title}\nNo metrics"
+
+    def find_metric_key(values, options):
+        lowered = {str(k).lower(): k for k in values.keys()}
+        for candidate in options:
+            for lk, orig_k in lowered.items():
+                if candidate in lk:
+                    return orig_k
+        return None
+
+    lines = [title]
+    class_items = list(metrics_dict.items())[:max_classes]
+    for class_name, values in class_items:
+        if not isinstance(values, dict):
+            lines.append(f"{class_name}: N/A")
+            continue
+
+        auroc_key = find_metric_key(values, ["auroc"])
+        auprc_key = find_metric_key(values, ["auprc", "aupr"])
+        fpr_key = find_metric_key(values, ["fpr@tpr95", "fpr95", "fpr"])
+
+        auroc_val = _format_metric_value(values.get(auroc_key)) if auroc_key else "N/A"
+        auprc_val = _format_metric_value(values.get(auprc_key)) if auprc_key else "N/A"
+        fpr_val = _format_metric_value(values.get(fpr_key)) if fpr_key else "N/A"
+        lines.append(f"{class_name}: AUROC={auroc_val}, AUPRC={auprc_val}, FPR={fpr_val}")
+
+    if len(metrics_dict) > max_classes:
+        lines.append(f"... (+{len(metrics_dict) - max_classes} classes)")
+
+    return "\n".join(lines)
+
+def show_scores_visualization(image, ood_score, llr_score, llr, ood, label=None, save_path="visualization_scores.png"):
     """
     Visualize the original image alongside OOD and LLR score heatmaps.
     
@@ -205,6 +343,8 @@ def show_scores_visualization(image, ood_score, llr_score, label=None, save_path
         image: torch.Tensor of shape (C, H, W) with normalized values
         ood_score: torch.Tensor of shape (H, W) with OOD scores
         llr_score: torch.Tensor of shape (H, W) with LLR scores
+        llr: dict of LLR evaluation metrics (per class)
+        ood: dict of OOD evaluation metrics (per class)
         label: Optional tensor of shape (H, W) with class ids
         save_path: Path to save the visualization image
     """
@@ -253,12 +393,34 @@ def show_scores_visualization(image, ood_score, llr_score, label=None, save_path
     axes[2].set_title('OOD Score (Hot Map)')
     axes[2].axis('off')
     plt.colorbar(im1, ax=axes[2])
+    axes[2].text(
+        0.01,
+        0.01,
+        _format_metrics_text(ood, "OOD metrics"),
+        transform=axes[2].transAxes,
+        fontsize=7,
+        va='bottom',
+        ha='left',
+        color='black',
+        bbox=dict(facecolor='white', alpha=0.8, edgecolor='none', boxstyle='round,pad=0.3'),
+    )
 
     # Display LLR score heatmap
     im2 = axes[3].imshow(llr_score_np, cmap='RdYlBu_r')
     axes[3].set_title('LLR Score')
     axes[3].axis('off')
     plt.colorbar(im2, ax=axes[3])
+    axes[3].text(
+        0.01,
+        0.01,
+        _format_metrics_text(llr, "LLR metrics"),
+        transform=axes[3].transAxes,
+        fontsize=7,
+        va='bottom',
+        ha='left',
+        color='black',
+        bbox=dict(facecolor='white', alpha=0.8, edgecolor='none', boxstyle='round,pad=0.3'),
+    )
     
     plt.tight_layout()
     plt.savefig(save_path, dpi=150, bbox_inches='tight')

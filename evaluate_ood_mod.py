@@ -46,7 +46,7 @@ def evaluate_single_ckpt(ckpt, args, opts):
 
     hparams = edict(
         dataset_root=os.path.join(
-            "/home/nicholas/Desktop/main_UE4/output/"
+            "/home/nicholas/Desktop/main_UE4/output_an_seq/"
         )
     )
     dataset = CarlaAnomaly(
@@ -111,9 +111,11 @@ def evaluate_ood(anomaly_score, ood_gts, verbose=True):
 
     result = {}
 
-    for cls in ["all","tiny","small","medium","large"]:
+    for cls in ["all_without_potholes"]:
         if cls == "all":
             mask = ood_gts >= 30
+        elif cls == "all_without_potholes":
+            mask = ood_gts > 30
         elif cls == "pothole":
             mask = (ood_gts == 30)
         elif cls == "tiny":
