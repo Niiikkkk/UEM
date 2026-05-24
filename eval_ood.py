@@ -114,14 +114,21 @@ def main(args):
         for w in weathers:
             w_path = os.path.join(or_path,w)
             runs = os.listdir(w_path)
-            print(runs)
-            exit()
-            for run in runs:
+            for run in ['1']:
                 run_path = os.path.join(w_path,run)
                 images = glob.glob(f"{run_path}/rgb/*.png")
-                images = images[50:]
-                len_final = min(len(images)-1,30)
-                images = images[:len_final]
+                images = images[50]
+                #images = images[50:]
+                #len_final = min(len(images)-1,30)
+                #images = images[:len_final]
+
+                save_path = f"img_results_new/{args.ckpt.split('/')[1]}/{w}/{run}"
+                if not os.path.exists(save_path):
+                    os.makedirs(save_path, exist_ok=True)
+                save_path = f"img_results_new/{args.ckpt.split('/')[1]}/{w}/{run}/{img.split('/')[-1]}"
+                ret = run_model_eval_ood(img, model, device, transform, save_path)
+
+                continue
                 j=0
                 while j<3:
                     img = random.choice(images)
