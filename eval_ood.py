@@ -119,8 +119,6 @@ def main(args):
                 images = glob.glob(f"{run_path}/rgb/*.png")
                 #Check those images and get some new
                 img = images[80]
-                print(img)
-                exit()
                 #images = images[50:]
                 #len_final = min(len(images)-1,30)
                 #images = images[:len_final]
