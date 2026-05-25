@@ -118,7 +118,7 @@ def main(args):
                 run_path = os.path.join(w_path,run)
                 images = glob.glob(f"{run_path}/rgb/*.png")
                 #Check those images and get some new
-                img = images[70]
+                img = images[80]
                 print(img)
                 exit()
                 #images = images[50:]
