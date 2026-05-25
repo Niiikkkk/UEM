@@ -117,18 +117,24 @@ def main(args):
             for run in ['1']:
                 run_path = os.path.join(w_path,run)
                 images = glob.glob(f"{run_path}/rgb/*.png")
+                images = [
+                    "HeavyRainFog/4/rgb/saw_hat_hoodcar_fence_pilesand__137173.png",
+                    "Sunny/1/rgb/blowingnewspaper_rock_bicycle1_roadblock__129967.png",
+                    "HeavyRainFog/7/rgb/dumbell_wrench_brick_trafficcone_roadblock2__140968.png",
+                ]
                 #Check those images and get some new
-                img = images[80]
-                #images = images[50:]
-                #len_final = min(len(images)-1,30)
-                #images = images[:len_final]
+                for img in images:
+                    img = or_path + img
+                    #images = images[50:]
+                    #len_final = min(len(images)-1,30)
+                    #images = images[:len_final]
 
-                save_path = f"img_results_new/{args.ckpt.split('/')[1]}/{w}/{run}"
-                if not os.path.exists(save_path):
-                    os.makedirs(save_path, exist_ok=True)
-                save_path = f"img_results_new/{args.ckpt.split('/')[1]}/{w}/{run}/{img.split('/')[-1]}"
-                ret = run_model_eval_ood(img, model, device, transform, save_path)
-
+                    save_path = f"img_results_new_new/{args.ckpt.split('/')[1]}/{w}/{run}"
+                    if not os.path.exists(save_path):
+                        os.makedirs(save_path, exist_ok=True)
+                    save_path = f"img_results_new_new/{args.ckpt.split('/')[1]}/{w}/{run}/{img.split('/')[-1]}"
+                    ret = run_model_eval_ood(img, model, device, transform, save_path)
+                exit()
                 continue
                 j=0
                 while j<3:
