@@ -124,7 +124,7 @@ def main(args):
                 ]
                 #Check those images and get some new
                 for img in images:
-                    img = or_path + img
+                    img = or_path + "/" + img
                     #images = images[50:]
                     #len_final = min(len(images)-1,30)
                     #images = images[:len_final]
