@@ -111,7 +111,7 @@ def evaluate_ood(anomaly_score, ood_gts, verbose=True):
 
     result = {}
 
-    for cls in ["all_without_potholes"]:
+    for cls in ["all"]:
         if cls == "all":
             mask = ood_gts >= 30
         elif cls == "all_without_potholes":

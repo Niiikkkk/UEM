@@ -338,7 +338,12 @@ def _format_metrics_text(metrics_dict, title, max_classes=6):
         auroc_val = _format_metric_value(values.get(auroc_key)) if auroc_key else "N/A"
         auprc_val = _format_metric_value(values.get(auprc_key)) if auprc_key else "N/A"
         fpr_val = _format_metric_value(values.get(fpr_key)) if fpr_key else "N/A"
-        lines.append(f"{class_name}: AUROC={auroc_val}, AUPRC={auprc_val}, FPR={fpr_val}")
+        lines.append(f"{class_name}: AUROC={auroc_val}, "
+                     
+                     
+                     #Retake the images, without AUPRC values... 
+                     #f"AUPRC={auprc_val}, "
+                     f"FPR={fpr_val}")
 
     if len(metrics_dict) > max_classes:
         lines.append(f"... (+{len(metrics_dict) - max_classes} classes)")
